@@ -35,9 +35,16 @@ yarn-error.log*
 # Local env files
 **/.env
 **/.env.local
+**/.env.production
 **/.env.development.local
 **/.env.test.local
 **/.env.production.local
+
+# Allow example env files
+!**/.env.example
+
+# Medusa build output
+**/.medusa
 
 # Turbo
 .turbo

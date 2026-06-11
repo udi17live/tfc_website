@@ -1,0 +1,96 @@
+# =============================================================================
+# TFC Website — DEVELOPMENT
+# Usage:
+#   docker compose up           # start everything
+#   docker compose up backend   # start only backend + deps
+#   docker compose down -v      # stop and wipe volumes
+#   docker compose build        # rebuild image after package.json changes
+# =============================================================================
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: postgres -c max_connections=200
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["sh", "./start.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      HMR_PORT: 5173
+      HMR_HOST: localhost
+      HMR_CLIENT_PORT: 5173
+      HMR_PROTOCOL: ws
+    ports:
+      - "${BACKEND_PORT:-9000}:9000"
+      - "5173:5173"
+    volumes:
+      - ./apps/backend/src:/server/apps/backend/src
+      - ./apps/backend/medusa-config.ts:/server/apps/backend/medusa-config.ts
+      - /server/node_modules
+      - /server/apps/backend/node_modules
+
+  storefront:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["sh", "./start-storefront.sh"]
+    depends_on:
+      - backend
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://backend:9000
+    ports:
+      - "${STOREFRONT_PORT:-8000}:8000"
+    volumes:
+      - ./apps/storefront/src:/server/apps/storefront/src
+      - ./apps/storefront/public:/server/apps/storefront/public
+      - ./apps/storefront/next.config.js:/server/apps/storefront/next.config.js
+      - /server/node_modules
+      - /server/apps/storefront/node_modules
+      - /server/apps/storefront/.next
+
+volumes:
+  postgres_data:
+  redis_data:

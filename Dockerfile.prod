@@ -1,0 +1,44 @@
+# Stage 1: build backend
+FROM node:20-alpine AS builder
+
+RUN apk add --no-cache netcat-openbsd
+
+WORKDIR /server
+
+COPY package.json package-lock.json turbo.json .npmrc ./
+COPY apps/backend/package.json ./servers/backend/
+COPY apps/storefront/package.json ./servers/storefront/
+
+RUN npm install --legacy-peer-deps
+
+COPY . .
+
+# Build Medusa backend
+RUN cd apps/backend && ../../node_modules/.bin/medusa build
+
+# Build Next.js storefront
+RUN cd apps/storefront && ../../node_modules/.bin/next build
+
+# Stage 2: lean production image
+FROM node:20-alpine AS runner
+
+RUN apk add --no-cache netcat-openbsd
+
+WORKDIR /server
+
+# Copy built backend
+COPY --from=builder /server/servers/backend/.medusa ./servers/backend/.medusa
+COPY --from=builder /server/servers/backend/package.json ./servers/backend/
+
+# Copy built storefront (standalone output)
+COPY --from=builder /server/servers/storefront/.next/standalone ./servers/storefront
+COPY --from=builder /server/servers/storefront/.next/static ./servers/storefront/.next/static
+COPY --from=builder /server/servers/storefront/public ./servers/storefront/public
+
+# Copy root package files and install production deps only
+COPY --from=builder /server/package.json /server/package-lock.json /server/.npmrc /server/turbo.json ./
+RUN npm install --omit=dev --legacy-peer-deps
+
+ENV NODE_ENV=production
+
+EXPOSE 9000 8000

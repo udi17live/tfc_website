@@ -1,144 +1,91 @@
 "use client"
 
-import { Popover, PopoverPanel, Transition } from "@headlessui/react"
-import useToggleState from "@lib/hooks/use-toggle-state"
-import { ArrowRightMini, XMark } from "@medusajs/icons"
-import { HttpTypes } from "@medusajs/types"
+import { Transition } from "@headlessui/react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { Text, clx } from "@modules/common/components/ui"
-import { Fragment } from "react"
-import CountrySelect from "../country-select"
-import LanguageSelect from "../language-select"
-import { Locale } from "@lib/data/locales"
+import { X } from "react-feather"
+import { Fragment, useState } from "react"
 
+const navItems = [
+  { label: "Home", href: "/" },
+  { label: "Men", href: "/store?category=men" },
+  { label: "Women", href: "/store?category=women" },
+  { label: "All", href: "/store" },
+]
 
-const SideMenuItems = {
-  Home: "/",
-  Store: "/store",
-  Account: "/account",
-  Cart: "/cart",
-}
-
-type SideMenuProps = {
-  regions: HttpTypes.StoreRegion[] | null
-  locales: Locale[] | null
-  currentLocale: string | null
-}
-
-const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
-  const countryToggleState = useToggleState()
-  const languageToggleState = useToggleState()
+const SideMenu = () => {
+  const [open, setOpen] = useState(false)
 
   return (
-    <div className="h-full">
-      <div className="flex items-center h-full">
-        <Popover className="h-full flex">
-          {({ open, close }) => (
-            <>
-              <div className="relative flex h-full">
-                <Popover.Button
-                  data-testid="nav-menu-button"
-                  className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none hover:text-ui-fg-base"
-                >
-                  Menu
-                </Popover.Button>
-              </div>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center justify-center p-2 -ml-2 hover:opacity-60 transition-opacity"
+        aria-label="Open menu"
+        data-testid="nav-menu-button"
+      >
+        <span className="font-display text-xl tracking-widest leading-none">MENU</span>
+      </button>
 
-              {open && (
-                <div
-                  className="fixed inset-0 z-[50] bg-black/0 pointer-events-auto"
-                  onClick={close}
-                  data-testid="side-menu-backdrop"
-                />
-              )}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30"
+          onClick={() => setOpen(false)}
+          data-testid="side-menu-backdrop"
+        />
+      )}
 
-              <Transition
-                show={open}
-                as={Fragment}
-                enter="transition ease-out duration-150"
-                enterFrom="opacity-0"
-                enterTo="opacity-100 backdrop-blur-2xl"
-                leave="transition ease-in duration-150"
-                leaveFrom="opacity-100 backdrop-blur-2xl"
-                leaveTo="opacity-0"
+      <Transition
+        show={open}
+        as={Fragment}
+        enter="transition ease-out duration-200"
+        enterFrom="-translate-x-full"
+        enterTo="translate-x-0"
+        leave="transition ease-in duration-150"
+        leaveFrom="translate-x-0"
+        leaveTo="-translate-x-full"
+      >
+        <div
+          className="fixed top-0 left-0 h-full w-72 bg-white z-50 flex flex-col"
+          data-testid="nav-menu-popup"
+        >
+          <div className="flex items-center justify-between px-6 h-16 border-b border-[#E5E5E5]">
+            <span className="font-display text-xl tracking-widest">TFC</span>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-2 -mr-2 hover:opacity-60 transition-opacity"
+              aria-label="Close menu"
+              data-testid="close-menu-button"
+            >
+              <X size={20} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <nav className="flex flex-col gap-1 px-6 py-8">
+            {navItems.map(({ label, href }) => (
+              <LocalizedClientLink
+                key={label}
+                href={href}
+                onClick={() => setOpen(false)}
+                className="font-display text-4xl tracking-widest py-2 hover:opacity-50 transition-opacity"
+                data-testid={`${label.toLowerCase()}-link`}
               >
-                <PopoverPanel className="flex flex-col absolute w-full pr-4 sm:pr-0 sm:w-1/3 2xl:w-1/4 sm:min-w-min h-[calc(100vh-1rem)] z-[51] inset-x-0 text-sm text-ui-fg-on-color m-2 backdrop-blur-2xl">
-                  <div
-                    data-testid="nav-menu-popup"
-                    className="flex flex-col h-full bg-[rgba(3,7,18,0.5)] rounded-rounded justify-between p-6"
-                  >
-                    <div className="flex justify-end" id="xmark">
-                      <button data-testid="close-menu-button" onClick={close}>
-                        <XMark />
-                      </button>
-                    </div>
-                    <ul className="flex flex-col gap-6 items-start justify-start">
-                      {Object.entries(SideMenuItems).map(([name, href]) => {
-                        return (
-                          <li key={name}>
-                            <LocalizedClientLink
-                              href={href}
-                              className="text-3xl leading-10 hover:text-ui-fg-disabled"
-                              onClick={close}
-                              data-testid={`${name.toLowerCase()}-link`}
-                            >
-                              {name}
-                            </LocalizedClientLink>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                    <div className="flex flex-col gap-y-6">
-                      {!!locales?.length && (
-                        <div
-                          className="flex justify-between"
-                          onMouseEnter={languageToggleState.open}
-                          onMouseLeave={languageToggleState.close}
-                        >
-                          <LanguageSelect
-                            toggleState={languageToggleState}
-                            locales={locales}
-                            currentLocale={currentLocale}
-                          />
-                          <ArrowRightMini
-                            className={clx(
-                              "transition-transform duration-150",
-                              languageToggleState.state ? "-rotate-90" : ""
-                            )}
-                          />
-                        </div>
-                      )}
-                      <div
-                        className="flex justify-between"
-                        onMouseEnter={countryToggleState.open}
-                        onMouseLeave={countryToggleState.close}
-                      >
-                        {regions && (
-                          <CountrySelect
-                            toggleState={countryToggleState}
-                            regions={regions}
-                          />
-                        )}
-                        <ArrowRightMini
-                          className={clx(
-                            "transition-transform duration-150",
-                            countryToggleState.state ? "-rotate-90" : ""
-                          )}
-                        />
-                      </div>
-                      <Text className="flex justify-between txt-compact-small">
-                        © {new Date().getFullYear()} Medusa Store. All rights
-                        reserved.
-                      </Text>
-                    </div>
-                  </div>
-                </PopoverPanel>
-              </Transition>
-            </>
-          )}
-        </Popover>
-      </div>
-    </div>
+                {label.toUpperCase()}
+              </LocalizedClientLink>
+            ))}
+          </nav>
+
+          <div className="mt-auto px-6 py-8 border-t border-[#E5E5E5]">
+            <LocalizedClientLink
+              href="/account"
+              onClick={() => setOpen(false)}
+              className="font-body text-sm uppercase tracking-widest hover:opacity-60 transition-opacity"
+            >
+              Account
+            </LocalizedClientLink>
+          </div>
+        </div>
+      </Transition>
+    </>
   )
 }
 

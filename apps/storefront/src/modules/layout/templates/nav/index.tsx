@@ -1,64 +1,106 @@
 import { Suspense } from "react"
-
-import { listLocales } from "@lib/data/locales"
-import { getLocale } from "@lib/data/locale-actions"
-import { listRegions } from "@lib/data/regions"
-import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
+import { Search, User } from "react-feather"
 
-export default async function Nav() {
-  const [regions, locales, currentLocale] = await Promise.all([
-    listRegions().then((regions: StoreRegion[]) => regions),
-    listLocales(),
-    getLocale(),
-  ])
+const desktopNavItems = [
+  { label: "Men", href: "/store?category=men" },
+  { label: "Women", href: "/store?category=women" },
+  { label: "All", href: "/store" },
+]
 
+export default function Nav() {
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className="relative h-16 mx-auto border-b duration-200 bg-white border-ui-border-base">
-        <nav className="content-container txt-xsmall-plus text-ui-fg-subtle flex items-center justify-between w-full h-full text-small-regular">
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="h-full">
-              <SideMenu regions={regions} locales={locales} currentLocale={currentLocale} />
+    <div className="sticky top-0 inset-x-0 z-50">
+      <header className="h-16 bg-white border-b border-[#E5E5E5]">
+        <nav className="content-container flex items-center justify-between h-full">
+
+          {/* Left — desktop nav links / mobile hamburger */}
+          <div className="flex-1 flex items-center gap-x-1">
+            {/* Mobile hamburger */}
+            <div className="small:hidden">
+              <SideMenu />
+            </div>
+
+            {/* Desktop nav */}
+            <div className="hidden small:flex items-center gap-x-1">
+              <LocalizedClientLink
+                href="/"
+                className="p-2 hover:opacity-60 transition-opacity"
+                aria-label="Home"
+                data-testid="nav-home-link"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </LocalizedClientLink>
+
+              {desktopNavItems.map(({ label, href }) => (
+                <LocalizedClientLink
+                  key={label}
+                  href={href}
+                  className="font-body text-xs uppercase tracking-widest px-3 py-2 hover:opacity-60 transition-opacity"
+                  data-testid={`nav-${label.toLowerCase()}-link`}
+                >
+                  {label}
+                </LocalizedClientLink>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center h-full">
+          {/* Center — wordmark */}
+          <div className="flex items-center justify-center">
             <LocalizedClientLink
               href="/"
-              className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
+              className="font-display text-xl tracking-[0.2em] hover:opacity-70 transition-opacity whitespace-nowrap"
               data-testid="nav-store-link"
             >
-              Medusa Store
+              THE FACTORY COLLECTION
             </LocalizedClientLink>
           </div>
 
-          <div className="flex items-center gap-x-6 h-full flex-1 basis-0 justify-end">
-            <div className="hidden small:flex items-center gap-x-6 h-full">
-              <LocalizedClientLink
-                className="hover:text-ui-fg-base"
-                href="/account"
-                data-testid="nav-account-link"
-              >
-                Account
-              </LocalizedClientLink>
-            </div>
+          {/* Right — icon actions */}
+          <div className="flex-1 flex items-center justify-end gap-x-1">
+            <LocalizedClientLink
+              href="/search"
+              className="p-2 hover:opacity-60 transition-opacity"
+              aria-label="Search"
+              data-testid="nav-search-link"
+            >
+              <Search size={20} strokeWidth={1.5} />
+            </LocalizedClientLink>
+
+            <LocalizedClientLink
+              href="/account"
+              className="p-2 hover:opacity-60 transition-opacity"
+              aria-label="Account"
+              data-testid="nav-account-link"
+            >
+              <User size={20} strokeWidth={1.5} />
+            </LocalizedClientLink>
+
             <Suspense
               fallback={
                 <LocalizedClientLink
-                  className="hover:text-ui-fg-base flex gap-2"
                   href="/cart"
+                  className="relative p-2 hover:opacity-60 transition-opacity"
+                  aria-label="Shopping bag"
                   data-testid="nav-cart-link"
                 >
-                  Cart (0)
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 01-8 0"/>
+                  </svg>
                 </LocalizedClientLink>
               }
             >
               <CartButton />
             </Suspense>
           </div>
+
         </nav>
       </header>
     </div>
